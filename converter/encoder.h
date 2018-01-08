@@ -26,42 +26,57 @@
 
 
 #define ENCODER_H
-
+#include <QObject>
 #include <QProcess>
 
-#include "worker.h"
+#include "track.h"
+#include "types.h"
+#include "job.h"
 
 class QProcess;
 class OutFormat;
 
-class Encoder: public Worker
+class Encoder: public QObject
 {
     Q_OBJECT
 public:
-    Encoder(const WorkerRequest request, const OutFormat *format, QObject *parent = 0);
+    Encoder(const Job &job,  QObject *parent = 0);
 
-    QString outFile() const { return mOutFile; }
-
+    //QString outFile() const { return mOutFile; }
 public slots:
-    void run() override;
+    void run();
 
 signals:
-
+    void progress(quint64 trackId, Track::Status status, int percent);
+    void finished();
 
 private slots:
-    void processBytesWritten(qint64 bytes);
 
+    //void processBytesWritten(qint64 bytes);
+    void proccessDecodedData(const QByteArray &data, QIODevice *encoder);
 
 private:
-    const WorkerRequest mRequest;
-    const OutFormat *mFormat;
-    QString mOutFile;
-    int mTotal;
-    int mReady;
-    int mProgress;
+    const Job mJob;
+//    const WorkerRequest mRequest;
+//    const OutFormat *mFormat;
+//    QString mOutFile;
+    uint mTotal;
+    uint mReady;
+    uint mProgress;
+//    CueIndex mStart;
+//    CueIndex mEnd;
+//    AudioQuality mQuality;
 
-    void readInputFile(QProcess *process);
+    //void readInputFile(QProcess *process);
     void runWav();
+    void runProccess();
 };
+
+class EncoderError: public FlaconError
+{
+public:
+    EncoderError(const QString &message): FlaconError(message, "Encoder") {}
+};
+
 
 #endif // ENCODER_H

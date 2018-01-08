@@ -28,6 +28,7 @@
 #include "../cue.h"
 #include "../settings.h"
 
+#include <assert.h>
 #include <QIODevice>
 #include <QFile>
 #include <QProcess>
@@ -35,6 +36,166 @@
 #include <QDebug>
 
 #define MAX_BUF_SIZE            4096
+
+
+
+/************************************************
+ *
+ ************************************************/
+qint64 timeToBytes(const CueTime &time, const AudioQuality quality)
+{
+    if (quality == AudioQuality::qualityCD())
+    {
+        return (qint64)((((double)time.frames() * (double)quality.bytesPerSecond()) / 75.0) + 0.5);
+    }
+    else
+    {
+        return (qint64)((((double)time.milliseconds() * (double)quality.bytesPerSecond()) / 1000.0) + 0.5);
+    }
+}
+
+
+/************************************************
+ *
+ ************************************************/
+Decoder::Decoder(const Job &job, QObject *parent):
+    QObject(parent),
+    mJob(job),
+    mProcess(new QProcess(this)),
+    mPos(0),
+    mBytesStart(0),
+    mBytesEnd(0)
+{
+    assert(mJob.start.milliseconds() < mJob.end.milliseconds());
+}
+
+
+/************************************************
+ *
+ ************************************************/
+Decoder::~Decoder()
+{
+    if (mProcess->state() != QProcess::NotRunning)
+    {
+        mProcess->close();
+        if (!mProcess->waitForFinished())
+        {
+            qWarning() << "Can't quit from process";
+            mProcess->kill();
+            mProcess->waitForFinished();
+        }
+    }
+
+    delete mProcess;
+}
+
+
+/************************************************
+ *
+ ************************************************/
+void Decoder::run()
+{
+    //uint secStart = int(mJob.start.milliseconds() / 1000);
+    uint secStart = qMax(0, int(mJob.start.milliseconds() / 1000) - 1);
+    uint secEnd   = (mJob.end.milliseconds() + 1000) / 1000;
+    assert(secStart < secEnd);
+
+
+    mPos = 0;
+    quint64 start  = timeToBytes(mJob.start, mJob.quality);
+    quint64 end    = timeToBytes(mJob.end,   mJob.quality);
+    quint64 offset = secStart * mJob.quality.bytesPerSecond();
+
+    mBytesStart = start - offset;
+    mBytesEnd   = end - offset;
+
+    QString format;
+    QString codec;
+    switch (mJob.quality.bitsPerSample())
+    {
+    case 16: codec = "pcm_s16le"; format = "s16le"; break;
+    case 24: codec = "pcm_s24le"; format = "s24le"; break;
+    case 32: codec = "pcm_s32le"; format = "s32le"; break;
+    default: throw DecoderError(tr("Requested invalid value of bits per sample."));
+    }
+
+
+    QStringList args;
+    args << "-loglevel" << "error";
+
+    // Seeks in this input file to position
+    if (secStart)
+    {
+        args << "-accurate_seek";
+        args << "-ss" << QString::number(secStart);
+    }
+
+    // Limit the duration of data read from the input file.
+    args << "-t" << QString::number(secEnd - secStart);
+
+    args << "-i" << mJob.inputFile;
+    args << "-f" << format;
+    args << "-acodec" << codec;
+    args << "-ar" << QString::number(mJob.quality.sampleRate());
+    args << "-";
+
+    mProcess->setProgram(QDir::toNativeSeparators("ffmpeg"));
+    mProcess->setArguments(args);
+
+    connect(mProcess, SIGNAL(readyReadStandardOutput()),
+            this,     SLOT(readStandardOutput()));
+
+    emit readyRead(StdWavHeader(end - start,
+                                mJob.quality.sampleRate(),
+                                mJob.quality.bitsPerSample(),
+                                mJob.quality.numChannels()).toByteArray());
+
+    mProcess->start();
+    if (!mProcess->waitForStarted())
+        throw DecoderError(mProcess->errorString());
+
+    qDebug() << mProcess->waitForFinished();
+    if (mProcess->exitCode())
+    {
+        debugArguments(mProcess->program(), mProcess->arguments());
+        throw DecoderError(mProcess->readAllStandardError());
+    }
+}
+
+
+/************************************************
+ *
+ ************************************************/
+void Decoder::readStandardOutput()
+{
+    QByteArray data = mProcess->readAllStandardOutput();
+
+    if (mPos < mBytesStart)
+    {
+        qint64 skip = mBytesStart - mPos;
+        if (skip >= data.length())
+        {
+            mPos += data.length();
+            return;
+        }
+
+        mPos += skip;
+        data = data.mid(skip);
+    }
+
+    if (mPos < mBytesEnd)
+    {
+        if (mPos + data.length() > mBytesEnd)
+        {
+            data = data.left(mBytesEnd - mPos);
+        }
+
+        mPos += data.length();
+        if (!data.isEmpty())
+            emit readyRead(data);
+    }
+}
+
 
 
 
@@ -57,7 +218,7 @@ qint64 timeToBytes(CueTime time, WavHeader wav)
 /************************************************
  *
  ************************************************/
-Decoder::Decoder(QObject *parent) :
+DecoderOld::DecoderOld(QObject *parent) :
     QObject(parent),
     mFormat(NULL),
     mProcess(NULL),
@@ -71,7 +232,7 @@ Decoder::Decoder(QObject *parent) :
 /************************************************
  *
  ************************************************/
-Decoder::Decoder(const AudioFormat &format, QObject *parent) :
+DecoderOld::DecoderOld(const AudioFormat &format, QObject *parent) :
     QObject(parent),
     mFormat(&format),
     mProcess(NULL),
@@ -85,7 +246,7 @@ Decoder::Decoder(const AudioFormat &format, QObject *parent) :
 /************************************************
  *
  ************************************************/
-Decoder::~Decoder()
+DecoderOld::~DecoderOld()
 {
     close();
     delete mFile;
@@ -96,7 +257,7 @@ Decoder::~Decoder()
 /************************************************
  *
  ************************************************/
-bool Decoder::open(const QString fileName)
+bool DecoderOld::open(const QString fileName)
 {
     mInputFile = fileName;
     if (!mFormat)
@@ -118,7 +279,7 @@ bool Decoder::open(const QString fileName)
 /************************************************
  *
  ************************************************/
-bool Decoder::openFile()
+bool DecoderOld::openFile()
 {
     mFile = new QFile(mInputFile, this);
     if (!mFile->open(QFile::ReadOnly))
@@ -144,7 +305,7 @@ bool Decoder::openFile()
 /************************************************
  *
  ************************************************/
-bool Decoder::openProcess()
+bool DecoderOld::openProcess()
 {
     mProcess = new QProcess(this);
 
@@ -179,7 +340,7 @@ bool Decoder::openProcess()
 /************************************************
  *
  ************************************************/
-void Decoder::close()
+void DecoderOld::close()
 {
     if (mFile)
         mFile->close();
@@ -215,7 +376,7 @@ void mustWrite(const char *buf, qint64 maxSize, QIODevice *outDevice)
 /************************************************
  *
  ************************************************/
-bool Decoder::extract(const CueTime &start, const CueTime &end, QIODevice *outDevice)
+bool DecoderOld::extract(const CueTime &start, const CueTime &end, QIODevice *outDevice)
 {
     try
     {
@@ -314,7 +475,7 @@ bool Decoder::extract(const CueTime &start, const CueTime &end, QIODevice *outDe
 /************************************************
  *
  ************************************************/
-bool Decoder::extract(const CueTime &start, const CueTime &end, const QString &outFileName)
+bool DecoderOld::extract(const CueTime &start, const CueTime &end, const QString &outFileName)
 {
     QFile file(outFileName);
     if (! file.open(QFile::WriteOnly | QFile::Truncate))
@@ -333,7 +494,7 @@ bool Decoder::extract(const CueTime &start, const CueTime &end, const QString &o
 /************************************************
  *
  ************************************************/
-void Decoder::readStandardError()
+void DecoderOld::readStandardError()
 {
     mErrBuff += mProcess->readAllStandardError();
 
@@ -349,3 +510,5 @@ void Decoder::readStandardError()
     if (!mErrBuff.endsWith('\n'))
         mErrBuff = lines.last();
 }
+
+

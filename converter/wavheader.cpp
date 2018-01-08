@@ -101,16 +101,18 @@ bool readTag(QIODevice *device, char tag[5])
 }
 
 
-struct SplitterError {
-    int        trackNum;
-    QString    msg;
-
-    SplitterError(int num, QString msg):
-        trackNum(num),
-        msg(msg)
-    {
-    }
-};
+/************************************************
+ *
+ ************************************************/
+bool readTag(const QByteArray &array, quint32 pos, char tag[5])
+{
+    tag[0] = array[pos];
+    tag[1] = array[pos + 1];
+    tag[2] = array[pos + 2];
+    tag[3] = array[pos + 3];
+    tag[4] = '\0';
+    return true;
+}
 
 
 /************************************************
@@ -128,12 +130,31 @@ quint32 readUInt32(QIODevice *stream)
 /************************************************
  *
  ************************************************/
+quint32 readUInt32(const QByteArray buf, quint32 pos)
+{
+    return qFromLittleEndian<quint32>((const uchar*)(buf.constData() + pos));
+}
+
+
+/************************************************
+ *
+ ************************************************/
 quint16 readUInt16(QIODevice *stream)
 {
     quint16 n;
     if (stream->read((char*)&n, 2) != 2)
         throw "Unexpected end of file";
     return qFromLittleEndian(n);
+}
+
+
+/************************************************
+ *
+ ************************************************/
+quint16 readUInt16(const QByteArray buf, quint32 pos)
+{
+    quint32 n = qFromLittleEndian<quint16>((const uchar*)buf.constData() + pos);
+    return n;
 }
 
 
@@ -164,7 +185,8 @@ WavHeader::WavHeader():
     mBlockAlign(0),
     mBitsPerSample(0),
     mDataSize(0),
-    mDataStartPos(0)
+    mDataStartPos(0),
+    mState(State::RIFF)
 {
 }
 
@@ -344,6 +366,101 @@ void WavHeader::load(QIODevice *stream)
     }
 
     throw "data chunk not found";
+}
+
+
+/************************************************
+ * See WAV specoification
+ *   http://soundfile.sapp.org/doc/WaveFormat/
+ *   https://en.wikipedia.org/wiki/WAV
+ ************************************************/
+bool WavHeader::load(QByteArray &data)
+{
+    quint32 pos = 0;
+    mBuffer += data;
+    if (mState == State::RIFF)
+    {
+        if (mBuffer.size() < 12)
+        {
+            return false;
+        }
+
+        if (mBuffer.mid(0, 4) != WAV_RIFF)
+            throw "WAVE header is missing RIFF tag while processing file";
+
+        this->mFileSize = readUInt32(mBuffer, 4) + 8;
+
+
+        if (mBuffer.mid(8, 4) != WAV_WAVE)
+            throw "WAVE header is missing WAVE tag while processing file";
+
+        pos = 12;
+        mState = State::Chunks;
+    }
+
+    if (mState == State::Chunks)
+    {
+        while (true)
+        {
+            if (mBuffer.size() - pos < 8)
+            {
+                mBuffer = mBuffer.mid(pos);
+                return false;
+            }
+
+            QString tag = mBuffer.mid(pos, 4);
+            quint32 chunkSize = readUInt32(mBuffer, pos + 4);
+
+            if(tag == WAV_DATA)
+            {
+                this->mDataSize = chunkSize;
+                this->mDataStartPos = pos + 8;
+                data = mBuffer.mid(pos+8);
+                return true;
+            }
+
+            if (mBuffer.size() - pos < chunkSize + 8)
+            {
+                mBuffer = mBuffer.mid(pos);
+                return false;
+            }
+
+            if (tag == WAV_FMT)
+            {
+                /*
+                The "fmt " subchunk describes the sound data's format:
+                Size    Name        Description
+                ----------------------------------------------
+                4   SubchunkID      Contains the letters "fmt ".
+                4   SubchunkSize    16 for PCM.  This is the size of the rest
+                                    of the Subchunk which follows this number.
+                2   AudioFormat     PCM = 1 (i.e. Linear quantization) Values
+                                    other than 1 indicate some form of compression.
+                2   NumChannels     Mono = 1, Stereo = 2, etc.
+                4   SampleRate      8000, 44100, etc.
+                4   ByteRate        == SampleRate * NumChannels * BitsPerSample/8
+                2   BlockAlign      == NumChannels * BitsPerSample/8 The number of
+                                    bytes for one sample including all channels.
+                2   BitsPerSample   8 bits = 8, 16 bits = 16, etc.
+                2   ExtraParamSize  if PCM, then doesn't exist
+                X   ExtraParams     space for extra parameters
+                */
+                if (chunkSize < 16)
+                    throw "fmt chunk in WAVE header was too short";
+
+                this->mFormat        = static_cast<Format>(readUInt16(mBuffer, pos + 8));
+                this->mNumChannels   = readUInt16(mBuffer, pos + 10);
+                this->mSampleRate    = readUInt32(mBuffer, pos + 12);
+                this->mByteRate      = readUInt32(mBuffer, pos + 16);
+                this->mBlockAlign    = readUInt16(mBuffer, pos + 20);
+                this->mBitsPerSample = readUInt16(mBuffer, pos + 22);
+            }
+
+            pos += chunkSize + 8;
+        }
+    }
+
+    return false;
 }
 
 

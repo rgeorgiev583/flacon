@@ -30,6 +30,7 @@
 #include <QObject>
 #include <QDateTime>
 #include <QVector>
+#include <QThreadPool>
 
 class DiskPipeline;
 class OutFormat;
@@ -55,14 +56,15 @@ public slots:
     void stop();
 
 private slots:
-    void startThread();
+    //void startThread();
+    void trackFinished(quint64 trackId);
 
 private:
     QDateTime mStartTime;
-    int mThreadCount;
+    //int mThreadCount;
     QVector<DiskPipeline*> mDiskPiplines;
-
     bool mShowStatistic;
+    QThreadPool mPool;
 
     bool check(OutFormat *format) const;
     void printStatistic();

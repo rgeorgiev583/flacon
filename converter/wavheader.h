@@ -74,6 +74,7 @@ public:
     quint64 duration() const;
 
     void load(QIODevice* stream);
+    bool load(QByteArray &data);
 
     QByteArray toByteArray() const;
 
@@ -89,7 +90,13 @@ protected:
     quint32 mDataStartPos;
 
 private:
+    enum class State {
+        RIFF,
+        Chunks
+    };
 
+    State mState;
+    QByteArray mBuffer;
 };
 
 QDebug operator<<(QDebug dbg, const WavHeader &header);

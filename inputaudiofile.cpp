@@ -110,7 +110,7 @@ bool InputAudioFile::load()
         return false;
     }
 
-    Decoder dec(*mFormat);
+    DecoderOld dec(*mFormat);
     if (!dec.open(mFileName))
     {
         mErrorString = QObject::tr("File <b>%1</b> is not a supported audio file. <br>"

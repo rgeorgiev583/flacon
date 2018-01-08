@@ -31,6 +31,7 @@
 #include <QStringList>
 #include <QVector>
 #include "wavheader.h"
+#include "../types.h"
 
 class QIODevice;
 class Disk;
@@ -88,8 +89,9 @@ private:
 QString calcAudioHash(const QString &fileName);
 bool  compareAudioHash(const QString &file1, const QString &expected);
 void writeHexString(const QString &str, QIODevice *out);
-void createWavFile(const QString &fileName, int duration, StdWavHeader::Quality quality);
+void createWavFile(const QString &fileName, int duration, const AudioQuality &quality);
 void encodeAudioFile(const QString &wavFileName, const QString &outFileName);
+void decodeAudioFile(const QString &inFileName, const QString &wavFileName);
 void testFail(const QString &message, const char *file, int line);
 
 #define FAIL(message) \
@@ -98,5 +100,8 @@ do {\
 } while (0)
 
 Disk *loadFromCue(const QString &cueFile);
+
+QString exceptionName(const std::exception &e);
+#define FAIL_EXCEPTION(E) QFAIL(QString("Exception %1: %2").arg(exceptionName(E)).arg(E.what()).toLocal8Bit())
 
 #endif // TOOLS_H

@@ -45,7 +45,7 @@ OutFormat_Ogg::OutFormat_Ogg()
 /************************************************
 
  ************************************************/
-QStringList OutFormat_Ogg::encoderArgs(const Track *track, const QString &outFile) const
+QStringList OutFormat_Ogg::encoderArgs(const Tags &tags, const QString &outFile) const
 {
     QStringList args;
 
@@ -74,16 +74,16 @@ QStringList OutFormat_Ogg::encoderArgs(const Track *track, const QString &outFil
     }
 
     // Tags .....................................................
-    if (!track->artist().isEmpty())  args << "--artist"  << track->artist();
-    if (!track->album().isEmpty())   args << "--album"   << track->album();
-    if (!track->genre().isEmpty())   args << "--genre"   << track->genre();
-    if (!track->date().isEmpty())    args << "--date"    << track->date();
-    if (!track->title().isEmpty())   args << "--title"   << track->title();
-    if (!track->comment().isEmpty()) args << "--comment" << QString("COMMENT=%1").arg(track->comment());
-    if (!track->disk()->discId().isEmpty())  args << "--comment" << QString("DISCID=%1").arg(track->disk()->discId());
-    args << "--tracknum" << QString("%1").arg(track->trackNum());
-    args << "--comment" << QString("TOTALTRACKS=%1").arg(track->disk()->count());
-    args << "--comment" << QString("TRACKTOTAL=%1").arg(track->disk()->count());
+    if (!tags.artist().isEmpty())   args << "--artist"  << tags.artist();
+    if (!tags.album().isEmpty())    args << "--album"   << tags.album();
+    if (!tags.genre().isEmpty())    args << "--genre"   << tags.genre();
+    if (!tags.date().isEmpty())     args << "--date"    << tags.date();
+    if (!tags.title().isEmpty())    args << "--title"   << tags.title();
+    if (!tags.comment().isEmpty())  args << "--comment" << QString("COMMENT=%1").arg(tags.comment());
+    if (!tags.diskId().isEmpty())   args << "--comment" << QString("DISCID=%1").arg(tags.diskId());
+    args << "--tracknum" << QString("%1").arg(tags.trackNum());
+    args << "--comment" << QString("TOTALTRACKS=%1").arg(tags.trackCount());
+    args << "--comment" << QString("TRACKTOTAL=%1").arg(tags.trackCount());
 
     // Files ....................................................
     args << "-o" << outFile;

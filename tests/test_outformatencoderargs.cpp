@@ -51,7 +51,7 @@ void TestFlacon::testOutFormatEncoderArgs()
             continue;
 
         Disk *disk = standardDisk();
-        QStringList args = format->encoderArgs(disk->track(0), "OutFile.wav");
+        QStringList args = format->encoderArgs(disk->track(0)->tags(), "OutFile.wav");
 
         QString result = args.join(" ");
         if (result != expected)

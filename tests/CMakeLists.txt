@@ -38,6 +38,7 @@ set(TEST_SOURCES
     inittestcase.cpp
     testflacon.cpp
     test_decoder.cpp
+    test_encoder.cpp
     test_wavheader.cpp
     test_format.cpp
     test_inputaudiofile.cpp

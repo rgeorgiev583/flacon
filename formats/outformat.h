@@ -29,7 +29,6 @@
 #include <QStringList>
 #include <QHash>
 #include <QVariant>
-#include "track.h"
 #include "types.h"
 
 class EncoderConfigPage;
@@ -49,7 +48,7 @@ public:
     bool createCue() const;
 
     virtual QString encoderProgramName() const = 0;
-    virtual QStringList encoderArgs(const Track *track, const QString &outFile) const = 0;
+    virtual QStringList encoderArgs(const Tags &tags, const QString &outFile) const = 0;
 
 
     virtual QString gainProgramName() const = 0;

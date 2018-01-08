@@ -38,13 +38,45 @@
 #include "../cue.h"
 #include "../disk.h"
 
+#ifdef __GNUG__
+#include <memory>
+#include <cxxabi.h>
+
+QString exceptionName(const std::exception &e)
+{
+    int     status;
+    char   *realname = abi::__cxa_demangle(typeid(e).name(), 0, 0, &status);
+    if (status == 0)
+    {
+        QString res = QString::fromLatin1(realname);
+        free(realname);
+        return res;
+    }
+    return typeid(e).name() ;
+}
+
+#else
+
+QString exceptionName(const std::exception &e) {
+    return typeid(e).name();
+}
+
+#endif
 
 /************************************************
  *
  ************************************************/
 QString calcAudioHash(const QString &fileName)
 {
-    QFile f(fileName);
+    QString wavFile = fileName + ".wav";
+    decodeAudioFile(fileName, wavFile);
+
+    QFile f(wavFile);
+    if (!f.exists())
+    {
+        FAIL(QString("File %1 not exists.\n").arg(fileName));
+        return "";
+    }
     f.open(QFile::ReadOnly);
     QByteArray ba = f.read(1024);
     int n = ba.indexOf("data");
@@ -57,6 +89,7 @@ QString calcAudioHash(const QString &fileName)
         hash.addData(ba);
     }
 
+    QFile::remove(wavFile);
     return hash.result().toHex();
 }
 
@@ -180,18 +213,18 @@ void writeHexString(const QString &str, QIODevice *out)
 /************************************************
  *
  ************************************************/
-void createWavFile(const QString &fileName, int duration, StdWavHeader::Quality quality)
+void createWavFile(const QString &fileName, int duration, const AudioQuality &quality)
 {
     if (QFileInfo(fileName).exists())
         return;
 
     QFile file(fileName);
-        if (!file.open(QFile::WriteOnly | QFile::Truncate))
-            QFAIL(QString("Can't create file '%1': %2").arg(fileName, file.errorString()).toLocal8Bit());
+    if (!file.open(QFile::WriteOnly | QFile::Truncate))
+        QFAIL(QString("Can't create file '%1': %2").arg(fileName, file.errorString()).toLocal8Bit());
 
 
-        int dataSize = StdWavHeader::bytesPerSecond(quality) * duration;
-    file.write(StdWavHeader(dataSize, quality).toByteArray());
+    quint64 dataSize = quality.bytesPerSecond() * duration;
+    file.write(StdWavHeader(dataSize, quality.sampleRate(), quality.bitsPerSample(), quality.numChannels()).toByteArray());
 
     quint32 x=123456789, y=362436069, z=521288629;
     union {
@@ -289,6 +322,72 @@ void encodeAudioFile(const QString &wavFileName, const QString &outFileName)
         QFAIL(QString("Can't encode to file '%1' (file don't exists'):").arg(outFileName).toLocal8Bit() + proc.readAllStandardError());
 }
 
+
+/************************************************
+ *
+ ************************************************/
+void decodeAudioFile(const QString &inFileName, const QString &wavFileName)
+{
+    QString program;
+    QStringList args;
+
+    QString ext = QFileInfo(inFileName).suffix();
+
+    if (ext == "wav")
+    {
+        QFile::copy(inFileName, wavFileName);
+        return;
+    }
+
+    if(ext == "ape")
+    {
+        program = "mac";
+        args << "-d";
+        args << inFileName;
+        args << wavFileName;
+    }
+
+    else if(ext == "flac")
+    {
+        program = "flac";
+        args << "--silent";
+        args << "--force";
+        args << "-d";
+        args << inFileName;
+        args << "-o" << wavFileName;
+    }
+
+    else if(ext == "wv")
+    {
+        program = "wvunpack";
+        args << inFileName;
+        args << "-y";
+        args << "-q";
+        args << "-o" << wavFileName;
+    }
+
+    else if(ext == "tta")
+    {
+        program = "ttaenc";
+        args << "-d";
+        args << inFileName;
+        args << "-o" << wavFileName;
+    }
+
+    else
+    {
+        QFAIL(QString("Can't create file '%1': unknown file format").arg(inFileName).toLocal8Bit());
+    }
+
+    QProcess proc;
+    proc.start(program, args);
+    proc.waitForFinished(3 * 60 * 10000);
+    if (proc.exitStatus() != 0)
+        QFAIL(QString("Can't decode to file '%1':").arg(wavFileName).toLocal8Bit() + proc.readAllStandardError());
+
+    if (!QFileInfo(wavFileName).isFile())
+        QFAIL(QString("Can't decode to file '%1' (file don't exists'):").arg(wavFileName).toLocal8Bit() + proc.readAllStandardError());
+}
 
 /************************************************
  *

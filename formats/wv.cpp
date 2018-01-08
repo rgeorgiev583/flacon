@@ -71,12 +71,13 @@ OutFormat_Wv::OutFormat_Wv()
 /************************************************
 
  ************************************************/
-QStringList OutFormat_Wv::encoderArgs(const Track *track, const QString &outFile) const
+QStringList OutFormat_Wv::encoderArgs(const Tags &tags, const QString &outFile) const
 {
     QStringList args;
 
     args << settings->programName(encoderProgramName());
 
+    args << "-y";            // Yes to all warnings
     args << "-q";            // Suppress progress indicator
 
     // Settings .................................................
@@ -86,14 +87,14 @@ QStringList OutFormat_Wv::encoderArgs(const Track *track, const QString &outFile
     if (compression == 2)    args << "-hh";
 
     // Tags .....................................................
-    if (!track->artist().isEmpty())  args << "-w" << QString("Artist=%1").arg(track->artist());
-    if (!track->album().isEmpty())   args << "-w" << QString("Album=%1").arg(track->album());
-    if (!track->genre().isEmpty())   args << "-w" << QString("Genre=%1").arg(track->genre());
-    if (!track->date().isEmpty())    args << "-w" << QString("Year=%1").arg(track->date());
-    if (!track->title().isEmpty())   args << "-w" << QString("Title=%1").arg(track->title());
-    if (!track->disk()->discId().isEmpty())  args << "-w" << QString("DiscId=%1").arg(track->disk()->discId());
-    if (!track->comment().isEmpty()) args << "-w" << QString("Comment=%1").arg(track->comment());
-    args << "-w" << QString("Track=%1/%2").arg(track->trackNum()).arg(track->disk()->count());
+    if (!tags.artist().isEmpty())   args << "-w" << QString("Artist=%1").arg(tags.artist());
+    if (!tags.album().isEmpty())    args << "-w" << QString("Album=%1").arg(tags.album());
+    if (!tags.genre().isEmpty())    args << "-w" << QString("Genre=%1").arg(tags.genre());
+    if (!tags.date().isEmpty())     args << "-w" << QString("Year=%1").arg(tags.date());
+    if (!tags.title().isEmpty())    args << "-w" << QString("Title=%1").arg(tags.title());
+    if (!tags.diskId().isEmpty())   args << "-w" << QString("DiscId=%1").arg(tags.diskId());
+    if (!tags.comment().isEmpty())  args << "-w" << QString("Comment=%1").arg(tags.comment());
+    args << "-w" << QString("Track=%1/%2").arg(tags.trackNum()).arg(tags.trackCount());
 
     args << "-";
     args << "-o" << outFile;

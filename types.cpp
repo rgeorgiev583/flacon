@@ -26,6 +26,7 @@
 
 #include "types.h"
 #include <QVector>
+#include <QTextStream>
 
 
 /************************************************
@@ -161,4 +162,115 @@ QIcon loadIcon(const QString &iconName, bool loadDisable)
     }
 
     return res;
+}
+
+
+/************************************************
+ *
+ ************************************************/
+AudioQuality::AudioQuality():
+    mBitsPerSample(0),
+    mSampleRate(0),
+    mNumChannels(2)
+{
+}
+
+
+/************************************************
+ *
+ ************************************************/
+AudioQuality::AudioQuality(quint32 bitsPerSample, quint32 sampleRate, quint16 numChannels):
+    mBitsPerSample(bitsPerSample),
+    mSampleRate(sampleRate),
+    mNumChannels(numChannels)
+{
+}
+
+
+/************************************************
+ *
+ ************************************************/
+bool AudioQuality::operator==(const AudioQuality &other) const
+{
+    return mBitsPerSample == other.mBitsPerSample &&
+           mSampleRate    == other.mSampleRate &&
+            mNumChannels   == other.mNumChannels;
+}
+
+
+/************************************************
+ *
+ ************************************************/
+bool AudioQuality::operator!=(const AudioQuality &other) const
+{
+    return ! operator ==(other);
+}
+
+
+
+/************************************************
+ *
+ ************************************************/
+void debugArguments(const QString &prog, const QStringList &args)
+{
+    QTextStream out(stderr);
+    out << prog << " ";
+    foreach (QString arg, args)
+    {
+        if (arg.contains(' ') || arg.contains('\t'))
+        {
+            out << "'" << arg << "' ";
+        }
+        else
+        {
+            out << arg << " ";
+        }
+
+    }
+    out << endl;
+}
+
+
+/************************************************
+ *
+ ************************************************/
+Tags::Tags():
+    mTrackNum(0)
+{
+
+}
+
+
+/************************************************
+ *
+ ************************************************/
+Tags::Tags(const Tags &other):
+    mArtist(other.mArtist),
+    mAlbum(other.mAlbum),
+    mComment(other.mComment),
+    mTitle(other.mTitle),
+    mGenre(other.mGenre),
+    mDate(other.mDate),
+    mDiskId(other.mDiskId),
+    mTrackNum(other.mTrackNum),
+    mTrackCount(other.mTrackCount)
+{
+}
+
+
+/************************************************
+ *
+ ************************************************/
+Tags &Tags::operator=(const Tags &other)
+{
+    mArtist     = other.mArtist;
+    mAlbum      = other.mAlbum;
+    mComment    = other.mComment;
+    mTitle      = other.mTitle;
+    mGenre      = other.mGenre;
+    mDate       = other.mDate;
+    mDiskId     = other.mDiskId;
+    mTrackNum   = other.mTrackNum;
+    mTrackCount = other.mTrackCount;
+    return *this;
 }

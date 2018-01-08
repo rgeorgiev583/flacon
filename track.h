@@ -29,6 +29,7 @@
 
 #include <QObject>
 #include "cue.h"
+#include "types.h"
 
 class Disk;
 
@@ -103,7 +104,11 @@ public:
                                 const QString &date,
                                 const QString &fileExt);
 
+    Tags tags() const;
+    quint64 id() const { return mId; }
+
 private:
+    quint64 mId;
     Disk *mDisk;
     int mIndex;
     QVector<CueIndex> mCueIndexes;

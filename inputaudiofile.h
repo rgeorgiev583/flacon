@@ -47,6 +47,7 @@ public:
     uint duration() const { return mDuration; }
 
     const AudioFormat *format() const { return mFormat; }
+
 private:
 
     QString mFileName;

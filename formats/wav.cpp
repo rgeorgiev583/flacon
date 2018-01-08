@@ -54,9 +54,9 @@ OutFormat_Wav::OutFormat_Wav()
 /************************************************
 
  ************************************************/
-QStringList OutFormat_Wav::encoderArgs(const Track *track, const QString &outFile) const
+QStringList OutFormat_Wav::encoderArgs(const Tags &tags, const QString &outFile) const
 {
-    Q_UNUSED(track);
+    Q_UNUSED(tags);
     Q_UNUSED(outFile);
     return QStringList();
 }

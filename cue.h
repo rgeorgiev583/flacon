@@ -48,6 +48,8 @@ public:
     uint milliseconds() const { return mHiValue; }
     uint frames() const { return mCdValue; }
 
+    static CueIndex fromMilliseconds(uint value);
+
 private:
     bool mNull;
     int mCdValue;

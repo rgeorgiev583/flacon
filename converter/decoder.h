@@ -33,17 +33,45 @@
 #include <QByteArray>
 #include "../cue.h"
 #include "../formats/format.h"
+#include "types.h"
+#include "job.h"
 
-class QIODevice;
 class QProcess;
 
 class Decoder : public QObject
 {
     Q_OBJECT
 public:
-    explicit Decoder(QObject *parent = 0);
-    explicit Decoder(const AudioFormat &format, QObject *parent = 0);
+    explicit Decoder(const Job &job, QObject *parent = 0);
     virtual ~Decoder();
+
+    void run();
+
+signals:
+    void readyRead(const QByteArray &data);
+
+private slots:
+    void readStandardOutput();
+
+private:
+    Job        mJob;
+    QProcess  *mProcess;
+    quint64    mPos;
+    quint64    mBytesStart;
+    quint64    mBytesEnd;
+};
+
+
+class QIODevice;
+
+
+class DecoderOld : public QObject
+{
+    Q_OBJECT
+public:
+    explicit DecoderOld(QObject *parent = 0);
+    explicit DecoderOld(const AudioFormat &format, QObject *parent = 0);
+    virtual ~DecoderOld();
 
     bool open(const QString fileName);
     void close();
@@ -79,7 +107,11 @@ private:
 };
 
 
-
+class DecoderError: public FlaconError
+{
+public:
+    DecoderError(const QString &message): FlaconError(message, "Decoder") {}
+};
 
 
 #endif // DECODER_H

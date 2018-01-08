@@ -54,7 +54,7 @@ Splitter::Splitter(const Disk *disk, const QString &workDir, PreGapType preGapTy
 void Splitter::run()
 {
     mCurrentTrack = 0;
-    Decoder decoder;
+    DecoderOld decoder;
 
     if (!decoder.open(mDisk->audioFileName()))
     {

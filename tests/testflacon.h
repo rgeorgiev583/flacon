@@ -75,6 +75,9 @@ private slots:
     void testDecoder();
     void testDecoder_data();
 
+    void testEncoder();
+    void testEncoder_data();
+
     void testByteArraySplit_data();
     void testByteArraySplit();
 
@@ -124,6 +127,7 @@ private:
     QString mFfmpeg;
     QString mAudio_cd_wav;
     QString mAudio_24x96_wav;
+    QString mAudio_32x192_wav;
 
     QString mAudio_cd_ape;
     QString mAudio_24x96_ape;

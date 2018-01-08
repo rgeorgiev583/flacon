@@ -35,6 +35,7 @@
 #include "encoder.h"
 #include "gain.h"
 #include "diskpipline.h"
+#include "inputaudiofile.h"
 
 #include <iostream>
 #include <math.h>
@@ -47,7 +48,7 @@
  ************************************************/
 Converter::Converter(QObject *parent) :
     QObject(parent),
-    mThreadCount(0),
+    //mThreadCount(0),
     mShowStatistic(true)
 {
 }
@@ -83,19 +84,18 @@ void Converter::start()
     mStartTime = QDateTime::currentDateTime();
 
     bool ok;
-    mThreadCount = settings->value(Settings::Encoder_ThreadCount).toInt(&ok);
-    if (!ok || mThreadCount < 1)
-        mThreadCount = qMax(6, QThread::idealThreadCount());
 
     for (int i=0; i<project->count(); ++i)
     {
-        DiskPipeline * pipeline = new DiskPipeline(project->disk(i), this);
+        Disk *disk = project->disk(i);
+        //AudioQuality quaity = disk->audioFile()->sampleRate()
+        DiskPipeline * pipeline = new DiskPipeline(project->disk(i), AudioQuality::qualityCD(), *settings->outFormat(), this);
 
-        connect(pipeline, SIGNAL(readyStart()),
-                this, SLOT(startThread()));
+        connect(pipeline, &DiskPipeline::trackFinished,
+                this,     &Converter::trackFinished);
+//        connect(pipeline, SIGNAL(readyStart()),
+//                this, SLOT(startThread()));
 
-        connect(pipeline, SIGNAL(threadFinished()),
-                this, SLOT(startThread()));
 
         mDiskPiplines << pipeline;
 
@@ -108,7 +108,17 @@ void Converter::start()
         }
     }
 
-    startThread();
+    int threadCount = settings->value(Settings::Encoder_ThreadCount).toInt(&ok);
+    if (!ok || threadCount < 1)
+        threadCount = qMax(6, QThread::idealThreadCount());
+
+    mPool.setMaxThreadCount(threadCount);
+    foreach (DiskPipeline *pipline, mDiskPiplines)
+    {
+        pipline->start(&mPool);
+    }
+
+//    startThread();
 }
 
 
@@ -117,13 +127,15 @@ void Converter::start()
  ************************************************/
 bool Converter::isRunning()
 {
-    foreach (DiskPipeline *pipe, mDiskPiplines)
-    {
-        if (pipe->isRunning())
-            return true;
-    }
+    return mPool.activeThreadCount() > 0;
 
-    return false;
+//    foreach (DiskPipeline *pipe, mDiskPiplines)
+//    {
+//        if (pipe->isRunning())
+//            return true;
+//    }
+
+//    return false;
 }
 
 
@@ -165,34 +177,38 @@ void Converter::stop()
     }
 }
 
+void Converter::trackFinished(quint64 )
+{
+    if (!isRunning())
+        emit finished();
+}
+
 
 /************************************************
 
  ************************************************/
-void Converter::startThread()
-{
-    int count = mThreadCount;
-    int splitterCount = qMax(1.0, ceil(count / 2.0));
+//void Converter::startThread()
+//{
+//    int count = mThreadCount;
 
-    foreach (DiskPipeline *pipe, mDiskPiplines)
-        count-=pipe->runningThreadCount();
+//    foreach (DiskPipeline *pipe, mDiskPiplines)
+//        count-=pipe->runningThreadCount();
 
-    foreach (DiskPipeline *pipe, mDiskPiplines)
-    {
-        pipe->startWorker(&splitterCount, &count);
-        if (count <= 0)
-            break;
-    }
+//    foreach (DiskPipeline *pipe, mDiskPiplines)
+//    {
+//        count = pipe->startWorker(count);
+//        if (count <= 0)
+//            break;
+//    }
 
+//    foreach (DiskPipeline *pipe, mDiskPiplines)
+//    {
+//        if (pipe->isRunning())
+//            return;
+//    }
+//    emit finished();
 
-    foreach (DiskPipeline *pipe, mDiskPiplines)
-    {
-        if (pipe->isRunning())
-            return;
-    }
-    emit finished();
-
-}
+//}
 
 
 /************************************************
@@ -243,3 +259,4 @@ void Converter::printStatistic()
 
     std::cout << str.toLocal8Bit().constData() << std::endl;
 }
+

@@ -70,6 +70,7 @@ set(HEADERS
     gui/coverdialog/coverdialog.h
     gui/coverdialog/asynclistwidgetitem.h
 
+    converter/job.h
     converter/wavheader.h
     converter/decoder.h
     converter/converter.h

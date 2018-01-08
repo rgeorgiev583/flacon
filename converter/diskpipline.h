@@ -29,44 +29,87 @@
 
 #include <QObject>
 #include <QTemporaryDir>
+#include <QThread>
 #include "track.h"
+#include "worker.h"
+#include "types.h"
+#include "job.h"
 
 class Disk;
 class Project;
 class WorkerThread;
+class QThreadPool;
+
+class Thread: public QThread
+{
+    Q_OBJECT
+public:
+    Thread(const Job &job, QObject *parent = nullptr);
+    virtual ~Thread();
+
+protected:
+    void run();
+
+signals:
+    void error(const QString &message);
+    void progress(int percent);
+private:
+    Job mJob;
+};
 
 class DiskPipeline : public QObject
 {
     Q_OBJECT
 public:
-    explicit DiskPipeline(const Disk *disk, QObject *parent = 0);
+    explicit DiskPipeline(const Disk *disk, const AudioQuality &quality, const OutFormat &format, QObject *parent = 0);
     virtual ~DiskPipeline();
 
     bool init();
-    void startWorker(int *splitterCount, int *count);
+    int startWorker(int count);
     void stop();
     bool isRunning() const;
     int runningThreadCount() const;
-
+    void start(QThreadPool *pool);
 signals:
     void readyStart();
     void threadFinished();
     void finished();
     void threadQuit();
+    void trackFinished(quint64 trackId);
 
 private slots:
-    void trackProgress(const Track *track, Track::Status status, int percent);
+    void encoderProgress(quint64 trackId, Track::Status status, int percent);
     void trackError(const Track *track, const QString &message);
 
-    void addEncoderRequest(const Track *track, const QString &inputFile);
-    void addGainRequest(const Track *track, const QString &fileName);
-    void trackDone(const Track *track, const QString &outFileName);
+    //void addEncoderRequest(const Track *track, const QString &inputFile);
+    //void addGainRequest(const Track *track, const QString &fileName);
+    //void trackDone(const Track *track, const QString &outFileName);
 
 private:
     class Data;
-    Data *mData;
-    QTemporaryDir *mTmpDir;
+   // Data *mData;
+//    QTemporaryDir *mTmpDir;
     QVector<WorkerThread*> mThreads;
+    QList<Job> mJobs;
+    const Disk *mDisk;
+    PreGapType mPreGapType;
+    AudioQuality mQuality;
+    int mCnt;
+    void startThread(const Job &job);
+    bool createDir(const QString &dirName) const;
+
+
 };
+
+
+class DiskPipelineError: public FlaconError
+{
+public:
+    DiskPipelineError(const QString &message) :
+        FlaconError(message, "DiskPipeline")
+    {
+    }
+};
+
 
 #endif // DISKPIPLINE_H

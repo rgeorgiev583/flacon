@@ -46,6 +46,8 @@ Track::Track(Disk *disk, int index):
     mStatus(NotRunning),
     mProgress(0)
 {
+    static quint64 globId;
+    mId = ++globId;
     qRegisterMetaType<Track::Status>("Track::Status");
 }
 
@@ -158,6 +160,26 @@ QString Track::calcFileName(const QString &pattern,
 
     QString res = expandPattern(pattern, &tokens, false);
     return res + "." + fileExt;
+}
+
+
+/************************************************
+ *
+ ************************************************/
+Tags Track::tags() const
+{
+    Tags res;
+    res.setArtist(this->artist());
+    res.setAlbum(this->album());
+    res.setComment(this->comment());
+    res.setTitle(this->title());
+    res.setGenre(this->genre());
+    res.setDate(this->date());
+    res.setDiskId(this->disk()->discId());
+    res.setTrackNum(this->trackNum());
+    res.setTrackCount(this->disk()->count());
+
+    return res;
 }
 
 

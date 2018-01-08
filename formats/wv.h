@@ -40,7 +40,7 @@ public:
     virtual QString encoderProgramName() const override { return "wavpack"; }
     virtual QString gainProgramName() const override { return "wvgain"; }
 
-    virtual QStringList encoderArgs(const Track *track, const QString &outFile) const override;
+    virtual QStringList encoderArgs(const Tags &tags, const QString &outFile) const override;
     virtual QStringList gainArgs(const QStringList &files) const override;
 
     QHash<QString, QVariant> defaultParameters() const override;

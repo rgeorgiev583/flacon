@@ -44,7 +44,7 @@ OutFormat_Aac::OutFormat_Aac()
 /************************************************
 
  ************************************************/
-QStringList OutFormat_Aac::encoderArgs(const Track *track, const QString &outFile) const
+QStringList OutFormat_Aac::encoderArgs(const Tags &tags, const QString &outFile) const
 {
     QStringList args;
 
@@ -61,43 +61,43 @@ QStringList OutFormat_Aac::encoderArgs(const Track *track, const QString &outFil
     // Tags .....................................................
     // --artist artist
     //     Set artist to artist
-    if (!track->artist().isEmpty())        args << "--artist"  << track->artist();
+    if (!tags.artist().isEmpty())   args << "--artist"  << tags.artist();
 
     // --writer writer
     //     Set writer to writer
 
     // --title title
     //     Set title to title
-    if (!track->title().isEmpty())        args << "--title"   << track->title();
+    if (!tags.title().isEmpty())    args << "--title"   << tags.title();
 
     // --genre genre
     //     Set genre to genre
-    if (!track->genre().isEmpty())        args << "--genre"   << track->genre();
+    if (!tags.genre().isEmpty())    args << "--genre"   << tags.genre();
 
     // --album album
     //     Set album to album
-    if (!track->album().isEmpty())        args << "--album"   << track->album();
+    if (!tags.album().isEmpty())    args << "--album"   << tags.album();
 
     // --compilation
     //     Set compilation
 
     // --track track
     //     Set track to track in the format “number/total”
-    args << "--track" << QString("%1/%2").arg(track->trackNum()).arg(track->disk()->count());
+    args << "--track" << QString("%1/%2").arg(tags.trackNum()).arg(tags.trackCount());
 
     // --disc disc
     //     Set disc to disc in the format “number/total”
 
     // --year year
     //     Set year to year
-    if (!track->date().isEmpty())   args << "--year"   << track->date();
+    if (!tags.date().isEmpty())     args << "--year"   << tags.date();
 
     // --cover-art file
     //     Set cover art to image in file; supported formats are GIF, JPEG, and PNG.
 
     // --comment comment
     //     Set comment to comment
-    if (!track->comment().isEmpty())   args << "--comment"   << track->comment();
+    if (!tags.comment().isEmpty())  args << "--comment"   << tags.comment();
 
 
     args << "-o" << outFile;

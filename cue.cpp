@@ -136,6 +136,22 @@ bool CueIndex::operator !=(const CueIndex &other) const
 
 
 /************************************************
+ *
+ ************************************************/
+CueIndex CueIndex::fromMilliseconds(uint value)
+{
+    int min  =  value / (60 * 1000);
+    int sec  = (value - min * 60 * 1000) / 1000;
+    int msec =  value - (min * 60 + sec) * 1000;
+
+    return CueIndex(QString("%1:%2.%3")
+            .arg(min,  2, 10, QChar('0'))
+            .arg(sec,  2, 10, QChar('0'))
+            .arg(msec, 3, 10, QChar('0')));
+}
+
+
+/************************************************
 
  ************************************************/
 bool CueIndex::parse(const QString &str)
