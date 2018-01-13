@@ -49,6 +49,7 @@ public slots:
 signals:
     void progress(quint64 trackId, Track::Status status, int percent);
     void finished();
+    void error(const QString &message);
 
 private slots:
 

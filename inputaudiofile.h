@@ -29,6 +29,7 @@
 
 #include <QString>
 #include <QList>
+#include "types.h"
 
 class AudioFormat;
 
@@ -47,7 +48,7 @@ public:
     uint duration() const { return mDuration; }
 
     const AudioFormat *format() const { return mFormat; }
-
+    AudioQuality    quality() const { return mQuality; }
 private:
 
     QString mFileName;
@@ -57,7 +58,7 @@ private:
     bool mCdQuality;
     uint mDuration;
     const AudioFormat *mFormat;
-
+    AudioQuality mQuality;
     bool load();
 };
 

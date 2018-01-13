@@ -152,13 +152,22 @@ void Decoder::run()
 
     mProcess->start();
     if (!mProcess->waitForStarted())
-        throw DecoderError(mProcess->errorString());
+    {
+        QTextStream(stderr) << "Decoder command: ";
+        debugArguments(mProcess->program(), mProcess->arguments());
 
-    qDebug() << mProcess->waitForFinished();
+        throw DecoderError(mProcess->errorString());
+    }
+
+    mProcess->waitForFinished();
     if (mProcess->exitCode())
     {
+        QTextStream(stderr) << "Decoder command: ";
         debugArguments(mProcess->program(), mProcess->arguments());
-        throw DecoderError(mProcess->readAllStandardError());
+
+        QString msg = tr("Decoder error:\n") +
+                QString::fromLocal8Bit(mProcess->readAllStandardError());
+        throw DecoderError(msg);
     }
 }
 

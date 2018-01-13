@@ -219,12 +219,12 @@ find_package(Qt5 REQUIRED
 
 qt5_add_translation(QM_FILES ${TS_FILES})
 
+include(translations/translatorsinfo.cmake)
+create_translatorsinfo_qrc(TRANSLATORS_INFO_QRC translations)
+
 
 include(FindPkgConfig)
 pkg_search_module(UCHARDET REQUIRED uchardet)
-
-include(translations/translatorsinfo.cmake)
-create_translatorsinfo_qrc(TRANSLATORS_INFO_QRC translations)
 set(LIBRARIES ${LIBRARIES} ${UCHARDET_LIBRARIES})
 include_directories(${UCHARDET_INCLUDE_DIRS})
 link_directories(${UCHARDET_LIBRARY_DIRS})

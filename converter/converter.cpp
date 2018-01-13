@@ -88,8 +88,8 @@ void Converter::start()
     for (int i=0; i<project->count(); ++i)
     {
         Disk *disk = project->disk(i);
-        //AudioQuality quaity = disk->audioFile()->sampleRate()
-        DiskPipeline * pipeline = new DiskPipeline(project->disk(i), AudioQuality::qualityCD(), *settings->outFormat(), this);
+        AudioQuality quality = disk->audioFile()->quality();
+        DiskPipeline * pipeline = new DiskPipeline(disk, quality, *settings->outFormat(), this);
 
         connect(pipeline, &DiskPipeline::trackFinished,
                 this,     &Converter::trackFinished);

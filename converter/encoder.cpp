@@ -53,12 +53,21 @@ Encoder::Encoder(const Job &job, QObject *parent):
 void Encoder::run()
 {
     emit progress(mJob.trackId, Track::Encoding, 0);
-    if (mJob.format == "WAV")
-        runWav();
-    else
-        runProccess();
+    try
+    {
+        if (mJob.format == "WAV")
+            runWav();
+        else
+            runProccess();
 
-    emit progress(mJob.trackId, Track::OK, -1);
+        emit progress(mJob.trackId, Track::OK, -1);
+    }
+    catch (FlaconError &err)
+    {
+        emit progress(mJob.trackId, Track::Error, -1);
+        emit error(err.message());
+    }
+
     emit finished();
 
 

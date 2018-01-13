@@ -37,7 +37,6 @@
 #include <QDir>
 
 
-
 /************************************************
 
  ************************************************/
@@ -66,6 +65,8 @@ InputAudioFile::InputAudioFile(const InputAudioFile &other)
     mCdQuality   = other.mCdQuality;
     mDuration    = other.mDuration;
     mFormat      = other.mFormat;
+    mQuality     = other.mQuality;
+
 }
 
 InputAudioFile &InputAudioFile::operator =(const InputAudioFile &other)
@@ -77,6 +78,7 @@ InputAudioFile &InputAudioFile::operator =(const InputAudioFile &other)
     mCdQuality   = other.mCdQuality;
     mDuration    = other.mDuration;
     mFormat      = other.mFormat;
+    mQuality     = other.mQuality;
     return *this;
 }
 
@@ -110,18 +112,77 @@ bool InputAudioFile::load()
         return false;
     }
 
-    DecoderOld dec(*mFormat);
-    if (!dec.open(mFileName))
+    // See also `mediainfo -f  CD.wav` & `mediainfo --Info-Parameters`
+    QProcess proc;
+    QStringList args;
+    args << "--Inform=Audio;"
+            "D:%Duration%\\n"
+            "S:%SamplingRate%\\n"
+            "B:%Resolution%\\n"
+            "C:%Channels%";
+
+    args << QDir::toNativeSeparators(mFileName);
+
+    proc.start("mediainfo", args);
+    proc.waitForFinished();
+
+    if (proc.exitCode() != 0)
     {
         mErrorString = QObject::tr("File <b>%1</b> is not a supported audio file. <br>"
                                    "<br>Verify that all required programs are installed and in your preferences.").arg(mFileName);
-        mErrorString += ": " + dec.errorString();
+        mErrorString += ": " + proc.readAllStandardError();
         return false;
     }
 
-    mSampleRate = dec.wavHeader().sampleRate();
-    mCdQuality  = dec.wavHeader().isCdQuality();
-    mDuration   = dec.duration();
+    bool ok = false;
+    foreach (QByteArray line, proc.readAllStandardOutput().split('\n'))
+    {
+        if (!line.length())
+            continue;
+
+
+        if (line.startsWith("D:"))
+        {
+            mDuration = line.mid(2).toInt(&ok);
+
+            if (!ok)
+                break;
+        }
+
+        if (line.startsWith("S:"))
+        {
+            this->mQuality.setSampleRate(line.mid(2).toInt(&ok));
+
+            if (!ok)
+                break;
+        }
+
+        if (line.startsWith("B:"))
+        {
+            this->mQuality.setBitsPerSample(line.mid(2).toInt(&ok));
+
+            if (!ok)
+                break;
+        }
+
+        if (line.startsWith("C:"))
+        {
+            this->mQuality.setNumChannels(line.mid(2).toInt(&ok));
+
+            if (!ok)
+                break;
+        }
+    }
+
+    if (!ok)
+    {
+        mErrorString = QObject::tr("File <b>%1</b> is not a supported audio file. <br>"
+                               "<br>Verify that all required programs are installed and in your preferences.").arg(mFileName);
+        return false;
+    }
+
+    mSampleRate = mQuality.sampleRate();
+    mCdQuality  = mQuality.bitsPerSample() == 16;
 
     return true;
 }

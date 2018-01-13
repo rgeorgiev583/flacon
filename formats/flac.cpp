@@ -105,7 +105,7 @@ QStringList OutFormat_Flac::encoderArgs(const Tags &tags, const QString &outFile
 
     // Tags .....................................................
     if (!tags.artist().isEmpty())   args << "--tag" << QString("artist=%1").arg(tags.artist());
-    if (!tags.artist().isEmpty())   args << "--tag" << QString("album=%1").arg(tags.album());
+    if (!tags.album().isEmpty())    args << "--tag" << QString("album=%1").arg(tags.album());
     if (!tags.genre().isEmpty())    args << "--tag" << QString("genre=%1").arg(tags.genre());
     if (!tags.date().isEmpty())     args << "--tag" << QString("date=%1").arg(tags.date());
     if (!tags.title().isEmpty())    args << "--tag" << QString("title=%1").arg(tags.title());

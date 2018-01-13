@@ -27,9 +27,6 @@
 #include "testflacon.h"
 #include "tools.h"
 #include "../formats/format.h"
-//#include "../formats/wav.h"
-//#include "../formats/flac.h"
-//#include "../settings.h"
 #include "../inputaudiofile.h"
 
 #include <QTest>
@@ -41,10 +38,11 @@
 void TestFlacon::testInputAudioFile()
 {
     QFETCH(QString, fileName);
-    QFETCH(QString, duration);
-    QFETCH(QString, format);
-
-    uint dur = duration.toInt();
+    QFETCH(int,     bitsPersample);
+    QFETCH(int,     sampleRate);
+    QFETCH(int,     channels);
+    QFETCH(int,     duration);
+    QFETCH(QString, formatId);
 
 
     InputAudioFile ia(fileName);
@@ -54,69 +52,35 @@ void TestFlacon::testInputAudioFile()
         return;
     }
 
-    QCOMPARE(ia.duration(), dur);
-    QCOMPARE(ia.format()->name(), format);
+    QCOMPARE(ia.quality().sampleRate(),    uint(sampleRate));
+    QCOMPARE(ia.quality().bitsPerSample(), uint(bitsPersample));
+    QCOMPARE(ia.quality().numChannels(),   quint16(channels));
+    QCOMPARE(ia.duration(),                uint(duration));
+    QCOMPARE(ia.format()->name(), formatId);
 }
 
 
 void TestFlacon::testInputAudioFile_data()
 {
     QTest::addColumn<QString>("fileName");
-    QTest::addColumn<QString>("duration");
-    QTest::addColumn<QString>("format");
+    QTest::addColumn<int>("bitsPersample");
+    QTest::addColumn<int>("sampleRate");
+    QTest::addColumn<int>("channels");
+    QTest::addColumn<int>("duration");
+    QTest::addColumn<QString>("formatId");
 
-    QTest::newRow("01 mAudio_cd_ape")
-            << mAudio_cd_ape
-            << "900000"
-            << "APE";
+    //                                     File             bits    rate        chanels duration    format
+    QTest::newRow("01 mAudio_cd_ape")   << mAudio_cd_ape    << 16   << 44100    << 2    << 900000 << "APE";
+    QTest::newRow("02 mAudio_cd_flac")  << mAudio_cd_flac   << 16   << 44100    << 2    << 900000 << "FLAC";
+    QTest::newRow("03 mAudio_cd_tta")   << mAudio_cd_tta    << 16   << 44100    << 2    << 900000 << "TTA";
+    QTest::newRow("04 mAudio_cd_wav")   << mAudio_cd_wav    << 16   << 44100    << 2    << 900000 << "WAV";
+    QTest::newRow("05 mAudio_cd_wv")    << mAudio_cd_wv     << 16   << 44100    << 2    << 900000 << "WavPack";
 
-    QTest::newRow("02 mAudio_cd_flac")
-            << mAudio_cd_flac
-            << "900000"
-            << "FLAC";
+    QTest::newRow("06 mAudio_24x96_ape") << mAudio_24x96_ape    << 24   << 96000    << 2    << 900000 << "APE";
+    QTest::newRow("07 mAudio_24x96_flac")<< mAudio_24x96_flac   << 24   << 96000    << 2    << 900000 << "FLAC";
+    QTest::newRow("08 mAudio_24x96_tta") << mAudio_24x96_tta    << 24   << 96000    << 2    << 900000 << "TTA";
+    QTest::newRow("09 mAudio_24x96_wav") << mAudio_24x96_wav    << 24   << 96000    << 2    << 900000 << "WAV";
+    QTest::newRow("10 mAudio_24x96_wv")  << mAudio_24x96_wv     << 24   << 96000    << 2    << 900000 << "WavPack";
 
-
-    QTest::newRow("03 mAudio_cd_tta")
-            << mAudio_cd_tta
-            << "900000"
-            << "TTA";
-
-    QTest::newRow("04 mAudio_cd_wav")
-            << mAudio_cd_wav
-            << "900000"
-            << "WAV";
-
-    QTest::newRow("05 mAudio_cd_wv")
-            << mAudio_cd_wv
-            << "900000"
-            << "WavPack";
-
-
-
-    QTest::newRow("06 mAudio_24x96_ape")
-            << mAudio_24x96_ape
-            << "900000"
-            << "APE";
-
-    QTest::newRow("07 mAudio_24x96_flac")
-            << mAudio_24x96_flac
-            << "900000"
-            << "FLAC";
-
-
-    QTest::newRow("08 mAudio_24x96_tta")
-            << mAudio_24x96_tta
-            << "900000"
-            << "TTA";
-
-    QTest::newRow("09 mAudio_24x96_wav")
-            << mAudio_24x96_wav
-            << "900000"
-            << "WAV";
-
-    QTest::newRow("10 mAudio_24x96_wv")
-            << mAudio_24x96_wv
-            << "900000"
-            << "WavPack";
-
+    QTest::newRow("11 mAudio_32x192_wav") << mAudio_32x192_wav  << 32   << 192000   << 2    << 900000 << "WAV";
 }

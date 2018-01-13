@@ -235,7 +235,8 @@ void debugArguments(const QString &prog, const QStringList &args)
  *
  ************************************************/
 Tags::Tags():
-    mTrackNum(0)
+    mTrackNum(0),
+    mTrackCount(0)
 {
 
 }
