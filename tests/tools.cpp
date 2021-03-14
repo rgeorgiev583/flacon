@@ -402,6 +402,13 @@ void encodeAudioFile(const QString &wavFileName, const QString &outFileName)
         args << "/";
     }
 
+    else if (ext == "mp3") {
+        program = "flac";
+        args << "-S";
+        args << wavFileName;
+        args << outFileName;
+    }
+
     else {
         QFAIL(QString("Can't create file '%1': unknown file format").arg(outFileName).toLocal8Bit());
     }
