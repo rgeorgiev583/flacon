@@ -102,6 +102,7 @@ set(HEADERS
     formats/in_tta.h
     formats/in_wav.h
     formats/in_wv.h
+    formats/in_mp3.h
 
     formats/encoderconfigpage.h
     formats/outformat.h
@@ -165,6 +166,7 @@ set(SOURCES
     formats/in_tta.cpp
     formats/in_wav.cpp
     formats/in_wv.cpp
+    formats/in_mp3.cpp
 
     formats/encoderconfigpage.cpp
     formats/outformat.cpp

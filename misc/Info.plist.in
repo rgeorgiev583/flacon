@@ -80,6 +80,12 @@
 			<key>CFBundleTypeRole</key><string>Viewer</string>
 		</dict>
 
+		<dict>
+			<key>CFBundleTypeExtensions</key><array><string>mp3</string></array>
+			<key>CFBundleTypeIconFile</key><string>flacon.icns</string>
+			<key>CFBundleTypeName</key><string>MP3 Audio File</string>
+			<key>CFBundleTypeRole</key><string>Viewer</string>
+		</dict>
 	</array>
 
 	<key>SUFeedURL</key>
