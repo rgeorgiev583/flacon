@@ -37,7 +37,7 @@ public:
     virtual QString ext() const override { return "mp3"; }
     virtual bool    isInputFormat() const override { return true; }
 
-    virtual QString     decoderProgramName() const override { return "lame"; }
+    virtual QString     decoderProgramName() const override { return "sox"; }
     virtual QStringList decoderArgs(const QString &fileName) const override;
 
     virtual QByteArray magic() const override { return ""; }

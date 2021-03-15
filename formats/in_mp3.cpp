@@ -42,9 +42,9 @@ bool Format_Mp3::checkMagic(const QByteArray &data) const
 QStringList Format_Mp3::decoderArgs(const QString &fileName) const
 {
     QStringList args;
-    args << "--decode";
-    args << "--silent";
     args << fileName;
+    args << "-t";
+    args << "wav";
     args << "-";
 
     return args;
